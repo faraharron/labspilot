@@ -38,13 +38,21 @@ export default function Dashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: labsData }, { data: partData }, { data: partMens }] = await Promise.all([
-      supabase.from('labs').select('*, partenaires(code, nom), formateurs(nom, prenom)').eq('archive', false),
+    const [{ data: labsData }, { data: partData }, { data: fData }, { data: partMens }] = await Promise.all([
+      supabase.from('labs').select('*').eq('archive', false),
       supabase.from('partenaires').select('*'),
+      supabase.from('formateurs').select('id, nom, prenom'),
       supabase.from('participants_mensuels').select('*').eq('annee', year),
     ])
-    setLabs(labsData || [])
-    setPartenaires(partData || [])
+    const pList = partData || []
+    const fList = fData || []
+    const enriched = (labsData || []).map(lab => ({
+      ...lab,
+      partenaires: pList.find(p => p.id === lab.partenaire_id) || null,
+      formateurs: fList.find(f => f.id === lab.formateur_id) || null,
+    }))
+    setLabs(enriched)
+    setPartenaires(pList)
     setParticipants(partMens || [])
     setLoading(false)
   }

@@ -30,14 +30,20 @@ export default function Labs() {
   async function loadAll() {
     setLoading(true)
     const [{ data: l }, { data: p }, { data: f }] = await Promise.all([
-      supabase.from('labs').select('*, partenaires(id, code, nom), formateurs(id, nom, prenom)')
-        .eq('archive', showArchived),
+      supabase.from('labs').select('*').eq('archive', showArchived),
       supabase.from('partenaires').select('*').eq('actif', true),
       supabase.from('formateurs').select('id, nom, prenom, groupe').eq('actif', true),
     ])
-    setLabs(l || [])
-    setPartenaires(p || [])
-    setFormateurs(f || [])
+    const pList = p || []
+    const fList = f || []
+    const enriched = (l || []).map(lab => ({
+      ...lab,
+      partenaires: pList.find(p => p.id === lab.partenaire_id) || null,
+      formateurs: fList.find(f => f.id === lab.formateur_id) || null,
+    }))
+    setLabs(enriched)
+    setPartenaires(pList)
+    setFormateurs(fList)
     setLoading(false)
   }
 
